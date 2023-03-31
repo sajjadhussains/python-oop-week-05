@@ -1,5 +1,5 @@
-import hashlib
-from random import random,randint
+import hashlib,threading
+from random import random,randint,choice
 from brta import BRTA
 license_authority=BRTA()
 from vehicles import Car
@@ -7,15 +7,26 @@ from vehicles import Bike
 from vehicles import Cng
 from ride_manager import uber
 
+class UserAlreadyExists(Exception):
+    def __init__(self,email, *args: object) -> None:
+        print(f'{email} already exist.')
+        super().__init__(*args)
 class User:
     def __init__(self,name,email,password) -> None:
         self.name=name
         self.email=email
         pwd_encrypted=hashlib.md5(password.encode()).hexdigest()
-        with open('users.txt','w') as file:
-            file.write(f'{email} {pwd_encrypted}')
+        alreadyExist=False
+        with open('users.txt','r') as file:
+            if email in file.read():
+                # raise UserAlreadyExists(email)
+                alreadyExist=True
         file.close()
-        print(self.name,"Created successfully")
+        if alreadyExist==False:
+            with open('users.txt','a') as file:
+                file.write(f'{email} {pwd_encrypted}\n')
+                file.close()
+        # print(self.name,"Created successfully")
     @staticmethod
     def log_in(email,password):
         stored_password=''
@@ -38,6 +49,7 @@ class Rider(User):
         super().__init__(name, email, password)
         self.location=location
         self.balance=balance
+        self.__trip_history=[]
     def set_location(self,location):
         self.location=location
     def get_location(self):
@@ -45,21 +57,29 @@ class Rider(User):
         super().__init__(name, email, password)
     def request_trip(self,destination):
         pass
-    def start_trip(self,fare):
+    def get_trip_history(self):
+        return self.__trip_history
+    
+    def start_a_trip(self,fare,trip_info):
+        print(f'A trip started for {self.name}')
         self.balance-=fare
+        # self.location=destination
+        self.__trip_history.append(trip_info)
 
 class Driver(User):
     def __init__(self, name, email, password,location,license) -> None:
         super().__init__(name, email, password)
         self.location=location
+        self.__trip_history=[]
         self.license=license
         self.valid_driver=license_authority.validate_license(email,license)
         self.earning=0
+        self.vehicle=None
 
     def take_driving_test(self):
         result=license_authority.take_driving_test(self.email)
         if result ==False:
-            print("Sorry!You failed")
+            self.license=None
         else:
             self.license=result
             self.valid_driver=True
@@ -67,37 +87,43 @@ class Driver(User):
     def register_a_vehicle(self,vehicle_type,license_plate,rate):
         if self.valid_driver is True:
             if vehicle_type=='car':
-                new_vehicle=Car(vehicle_type,license_plate,rate,self)
-                uber.add_a_vehicle(vehicle_type,new_vehicle)
+                self.vehicle=Car(vehicle_type,license_plate,rate,self)
+                uber.add_a_vehicle(vehicle_type,self.vehicle)
             elif vehicle_type=='bike':
-                new_vehicle=Bike(vehicle_type,license_plate,rate,self)
-                uber.add_a_vehicle(vehicle_type,new_vehicle)
+                self.vehicle=Bike(vehicle_type,license_plate,rate,self)
+                uber.add_a_vehicle(vehicle_type,self.vehicle)
             else:
-                new_vehicle=Cng(vehicle_type,license_plate,rate,self)
-                uber.add_a_vehicle(vehicle_type,new_vehicle)
+                self.vehicle=Cng(vehicle_type,license_plate,rate,self)
+                uber.add_a_vehicle(vehicle_type,self.vehicle)
         else:
-            print('You are not a valid driver')
+            # print('You are not a valid driver')
+            pass
 
-    def start_a_trip(self,destination,fare):
+    def start_a_trip(self,start,destination,fare,trip_info):
         self.earning+=fare
         self.location=destination
+        # start thread
+        trip_thread=threading.Thread(target=self.vehicle.start_driving,args=(start,destination,))
+        trip_thread.start()
+        self.vehicle.start_driving(start,destination)
+        self.__trip_history.append(trip_info)
         
+        
+vehicles_type=['car','bike','cng']
+rider1=Rider('rider1','rider1@gmail.com','rider1',randint(0,30),1000)
+rider2=Rider('rider2','rider2@gmail.com','rider2',randint(0,30),1000)
+rider3=Rider('rider3','rider3@gmail.com','rider3',randint(0,30),1000)
 
-rider1=Rider('rider1','rider1@gmail.com','rider1',randint(0,30),5000)
-rider2=Rider('rider2','rider2@gmail.com','rider2',randint(0,30),5000)
-rider3=Rider('rider3','rider3@gmail.com','rider3',randint(0,30),5000)
-
-driver1=Driver('driver1','driver1@gmail.com','driver1',randint(0,30),5565)
-driver1.take_driving_test()
-driver1.register_a_vehicle('car',1245,10)
-driver2=Driver('driver2','driver2@gmail.com','driver2',randint(0,30),5565)
-driver2.take_driving_test()
-driver2.register_a_vehicle('car',1245,10)
-driver3=Driver('driver3','driver3@gmail.com','driver3',randint(0,30),5565)
-driver3.take_driving_test()
-driver3.register_a_vehicle('car',1245,10)
-driver4=Driver('driver4','driver4@gmail.com','driver4',randint(0,30),5565)
-driver4.take_driving_test()
-driver4.register_a_vehicle('car',1245,10)
+for i in range(1,100):
+    driver1=Driver(f'driver{i}',f'driver{i}@gmail.com',f'driver{i}',randint(0,100),randint(1000,9999))
+    driver1.take_driving_test()
+    driver1.register_a_vehicle(choice(vehicles_type),randint(10000,99999),10)
 print(uber.get_available_cars())
-uber.find_a_vehicle(rider1,'car',90)
+uber.find_a_vehicle(rider1,choice(vehicles_type),randint(1,100))
+uber.find_a_vehicle(rider2,choice(vehicles_type),randint(1,100))
+uber.find_a_vehicle(rider3,choice(vehicles_type),randint(1,100))
+uber.find_a_vehicle(rider1,choice(vehicles_type),randint(1,100))
+uber.find_a_vehicle(rider1,choice(vehicles_type),randint(1,100))
+
+print(rider1.get_trip_history())
+print(uber.total_income())

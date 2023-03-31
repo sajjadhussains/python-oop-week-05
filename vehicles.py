@@ -1,6 +1,6 @@
 from abc import ABC,abstractmethod
-
-class Vehicle:
+import time
+class Vehicle(ABC):
     speed={
         'car':30,
         'bike':50,
@@ -25,39 +25,53 @@ class Car(Vehicle):
     def __init__(self, vehicle_type,license_plate,rate, driver) -> None:
         super().__init__(vehicle_type,license_plate, rate, driver)
 
-    def start_driving(self):
-        print(self.vehicle_type,'started')
+    def start_driving(self,start,destination):
+        print(self.vehicle_type,self.license_plate,'started')
         self.status='unavailable'
-        return super().start_driving()
+        distance=abs(start-destination)
+        for i in range(0,distance):
+            time.sleep(0.5)
+            print(f'Driving: {self.license_plate} current position:{i} of {distance}\n')
+        # return super().start_driving()
+        self.trip_finished()
 
     def trip_finished(self):
-        print(self.vehicle_type,self.license_plate,'trip completed')
         self.status='availabale'
-        return super().trip_finished()
+        print(self.vehicle_type,self.license_plate,'trip completed')
+
 class Bike(Vehicle):
     def __init__(self, vehicle_type,license_plate,rate, driver) -> None:
-        super().__init__(vehicle_type, rate, driver)
+        super().__init__(vehicle_type, license_plate,rate, driver)
 
-    def start_driving(self):
-        print(self.vehicle_type,'started')
-        self.status='unavailabale'
-        return super().start_driving()
+    def start_driving(self,start,destination):
+        print(self.vehicle_type,self.license_plate,'started')
+        self.status='unavailable'
+        distance=abs(start-destination)
+        for i in range(0,distance):
+            time.sleep(0.5)
+            print(f'Driving: {self.license_plate} current position:{i} of {distance}\n')
+        # return super().start_driving()
+        self.trip_finished()
 
     def trip_finished(self):
-        print(self.vehicle_type,self.license_plate,'trip completed')
         self.status='availabale'
-        return super().trip_finished()
+        print(self.vehicle_type,self.license_plate,'trip completed')
+
 class Cng(Vehicle):
     def __init__(self, vehicle_type,license_plate,rate, driver) -> None:
-        super().__init__(vehicle_type, rate, driver)
+        super().__init__(vehicle_type,license_plate, rate, driver)
 
-    def start_driving(self):
-        print(self.vehicle_type,'started')
-        self.status='unavailabale'
-        return super().start_driving()
+    def start_driving(self,start,destination):
+        print(self.vehicle_type,self.license_plate,'started')
+        self.status='unavailable'
+        distance=abs(start-destination)
+        for i in range(0,distance):
+            time.sleep(0.5)
+            print(f'Driving: {self.license_plate} current position:{i} of {distance}\n')
+        # return super().start_driving()
+        self.trip_finished()
 
     def trip_finished(self):
-        print(self.vehicle_type,self.license_plate,'trip completed')
         self.status='availabale'
-        return super().trip_finished()
+        print(self.vehicle_type,self.license_plate,'trip completed')
     
