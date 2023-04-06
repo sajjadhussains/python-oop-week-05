@@ -6,5 +6,5 @@ def check_palindrome(s):
     else:
         return False
 
-result=check_palindrome('abba')
+result=check_palindrome('aba')
 print(result)
